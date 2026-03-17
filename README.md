@@ -9,6 +9,8 @@
 - Production URL: [https://xn--xhqt48colas13k.tech/](https://xn--xhqt48colas13k.tech/)
 - Note: This project serves Chinese government procurement/regulatory scenarios.  
   For compatibility with government-site linking, browser parsing, and deployment tooling, the domain is shown in ASCII/Punycode form (English characters) in this README.
+- Language note: The legal corpus and most site content are based on Chinese government laws, regulations, and policy documents (primarily in Chinese).  
+  For English reading, you can use browser translation (e.g., Google Translate).
 
 ---
 
