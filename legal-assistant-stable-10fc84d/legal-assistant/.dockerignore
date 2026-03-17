@@ -1,0 +1,6 @@
+target
+.run
+.git
+.gitignore
+.DS_Store
+.env

@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>布兰智能 Bran AI</title>
+  <link rel="stylesheet" href="/ui/styles.css?v=20260309-fast-mode-5" />
+</head>
+<body>
+<div id="app" class="app-shell">
+  <aside id="leftRail" class="left-rail hidden">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div class="brand-copy">
+        <h1>布兰智能 Bran AI</h1>
+      </div>
+    </div>
+
+    <div class="rail-controls">
+      <button id="themeToggle" class="btn btn-ghost">模式：快速</button>
+      <button id="logoutBtn" class="btn btn-ghost">退出</button>
+    </div>
+
+    <section class="rail-block chat-tree-block">
+      <div class="block-head">
+        <h3>对话记录</h3>
+        <span id="meLabel"></span>
+      </div>
+      <button id="newChatBtn" class="btn">+ 新对话</button>
+      <input id="projectSearch" class="search" type="text" placeholder="搜索：" />
+      <label>新建项目名称<input id="newProjectName" type="text" placeholder="例如：江苏采购合规" /></label>
+      <label>项目描述（可选）<input id="newProjectDesc" type="text" placeholder="简要说明" /></label>
+      <button id="createProjectBtn" class="btn btn-ghost">创建项目</button>
+      <div class="sidebar-section">
+        <div class="section-head">
+          <h4>Projects</h4>
+          <button id="clearProjectScopeBtn" class="btn btn-ghost small">全部</button>
+        </div>
+        <ul id="projectFolders" class="list tree"></ul>
+      </div>
+      <div class="sidebar-section grow">
+        <div class="section-head">
+          <h4>Recent</h4>
+          <span id="scopeBadge" class="scope-badge">全部</span>
+        </div>
+        <ul id="conversationFeed" class="list compact"></ul>
+      </div>
+    </section>
+
+    <div class="icp-badge">
+      <a
+        class="icp-link"
+        href="https://beian.miit.gov.cn/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        苏ICP备2026010433号
+      </a>
+      <a
+        class="icp-link gongan-link"
+        href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=32100302011637"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <img class="gongan-logo" src="/ui/img/gongan-badge.png?v=20260306-1" alt="公安备案图标" />
+        <span>苏公网安备32100302011637号</span>
+      </a>
+    </div>
+  </aside>
+
+  <div id="railResize" class="rail-resize hidden" title="拖拽调整宽度"></div>
+
+  <section id="authView" class="auth-wrap">
+    <div class="auth-card">
+      <h2>登录</h2>
+      <label>账号<input id="loginUsername" type="text" placeholder="账号" /></label>
+      <label>密码
+        <div class="password-wrap">
+          <input id="loginPassword" type="password" placeholder="密码" />
+          <button id="toggleLoginPassword" class="password-toggle" type="button" aria-label="显示密码">显示</button>
+        </div>
+      </label>
+      <div class="auth-hint-row">
+        <button id="hintBtn" class="btn btn-ghost small">密码提示</button>
+        <span id="hintText"></span>
+      </div>
+      <button id="loginBtn" class="btn">登录</button>
+    </div>
+
+    <div class="auth-card">
+      <h2>注册</h2>
+      <label>账号<input id="registerUsername" type="text" placeholder="账号" /></label>
+      <label>密码
+        <div class="password-wrap">
+          <input id="registerPassword" type="password" placeholder="密码" />
+          <button id="toggleRegisterPassword" class="password-toggle" type="button" aria-label="显示密码">显示</button>
+        </div>
+      </label>
+      <label>密码提示<input id="registerHint" type="text" placeholder="用于找回密码" /></label>
+      <label id="registerInviteWrap" class="hidden">邀请码<input id="registerInviteCode" type="text" placeholder="输入邀请码" /></label>
+      <button id="registerBtn" class="btn">注册并登录</button>
+    </div>
+  </section>
+
+  <main id="workspaceView" class="workspace hidden">
+    <section class="chat-main">
+      <header class="chat-header">
+        <div class="chat-header-left">
+          <div class="toolbar-row">
+            <button id="userMenuBtn" class="btn btn-ghost small">账户</button>
+          </div>
+          <h2 id="chatTitle">未选择对话</h2>
+          <p id="chatSubtitle">可直接输入开始聊天，系统会自动保存</p>
+        </div>
+        <div class="export-row">
+          <button id="exportConversationPdf" class="btn btn-ghost small">对话 PDF</button>
+          <button id="exportConversationDocx" class="btn btn-ghost small">对话 DOCX</button>
+          <button id="exportProjectPdf" class="btn btn-ghost small">项目 PDF</button>
+          <button id="exportProjectDocx" class="btn btn-ghost small">项目 DOCX</button>
+        </div>
+      </header>
+
+      <section id="messages" class="messages"></section>
+      <div id="supportHint" class="support-hint hidden">布兰智能提供支持</div>
+
+      <footer class="composer">
+        <textarea id="questionInput" placeholder="在这里输入问题，回车发送（Shift+Enter 换行）"></textarea>
+        <button id="askBtn" class="btn">发送并保存</button>
+      </footer>
+    </section>
+  </main>
+
+  <aside id="userDrawer" class="user-drawer hidden">
+    <div class="drawer-head">
+      <h3>账户信息</h3>
+      <button id="closeDrawerBtn" class="btn btn-ghost small">关闭</button>
+    </div>
+    <div class="drawer-body">
+      <div><strong>账号：</strong><span id="drawerUsername">-</span></div>
+      <div><strong>密码提示：</strong><span id="drawerHint">-</span></div>
+      <hr />
+      <section id="inviteAdmin" class="invite-admin hidden">
+        <h4>邀请码管理（仅管理员）</h4>
+        <div class="invite-stats">
+          <span>总数: <strong id="inviteTotal">0</strong></span>
+          <span>可用: <strong id="inviteActive">0</strong></span>
+          <span>已用: <strong id="inviteUsed">0</strong></span>
+        </div>
+        <div class="invite-create">
+          <label>批量导入（每行一个）<textarea id="inviteImportInput" rows="4" placeholder="ABCD&#10;EFGH"></textarea></label>
+          <button id="inviteImportBtn" class="btn btn-ghost small">导入邀请码</button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <label>数量<input id="inviteRandomCount" type="number" min="1" max="200" value="20" /></label>
+            <label>长度<input id="inviteRandomLength" type="number" min="4" max="32" value="9" /></label>
+          </div>
+          <button id="inviteRandomBtn" class="btn btn-ghost small">生成随机邀请码</button>
+        </div>
+        <div id="inviteList" class="invite-list"></div>
+      </section>
+      <div class="drawer-actions">
+        <button id="drawerThemeBtn" class="btn btn-ghost">模式：快速</button>
+        <button id="drawerLogoutBtn" class="btn btn-ghost">退出登录</button>
+      </div>
+    </div>
+  </aside>
+
+  <div id="toast" class="toast hidden"></div>
+</div>
+<script src="/ui/app.js?v=20260309-fast-mode-5"></script>
+</body>
+</html>
