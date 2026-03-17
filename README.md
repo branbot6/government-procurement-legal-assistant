@@ -4,6 +4,12 @@
 
 > Applied AI Engineering Project demonstrating **hybrid retrieval systems, LLM orchestration, and evaluation-driven AI development** for regulatory and legal domains.
 
+## Live Demo
+
+- Production URL: [https://xn--xhqt48colas13k.tech/](https://xn--xhqt48colas13k.tech/)
+- Note: This project serves Chinese government procurement/regulatory scenarios.  
+  For compatibility with government-site linking, browser parsing, and deployment tooling, the domain is shown in ASCII/Punycode form (English characters) in this README.
+
 ---
 
 # Overview
