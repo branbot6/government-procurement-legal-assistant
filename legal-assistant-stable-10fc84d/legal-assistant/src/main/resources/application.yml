@@ -1,0 +1,56 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: legal-assistant
+  datasource:
+    url: jdbc:h2:file:./.run/legal-assistant-db;MODE=MYSQL;AUTO_SERVER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  corpus:
+    root-path: ${APP_CORPUS_ROOT_PATH:./corpus}
+  retrieval:
+    top-k: 12
+    chunk-size: 800
+    chunk-overlap: 120
+  minimax:
+    base-url: https://api.minimax.io/v1
+    api-key: ${MINIMAX_API_KEY:replace-me}
+    model: MiniMax-M2.5
+    group-id: ${APP_MINIMAX_GROUP_ID:}
+    timeout-seconds: 60
+  open-search:
+    url: http://localhost:9200
+    index-name: legal-chunks
+    username: admin
+    password: admin
+  fast-mode:
+    enabled: ${APP_FAST_MODE_ENABLED:true}
+    root-path: ${APP_FAST_MODE_ROOT_PATH:./fast-corpus}
+    retrieval-top-k: 50
+    rerank-top-k: 8
+    single-evidence-lead-min: 0.12
+  embedding:
+    enabled: ${APP_EMBEDDING_ENABLED:true}
+    base-url: ${APP_EMBEDDING_BASE_URL:http://localhost:8000}
+    endpoint: ${APP_EMBEDDING_ENDPOINT:/v1/embeddings}
+    model: ${APP_EMBEDDING_MODEL:BAAI/bge-large-zh-v1.5}
+    timeout-seconds: ${APP_EMBEDDING_TIMEOUT_SECONDS:25}
+    batch-size: ${APP_EMBEDDING_BATCH_SIZE:32}
+  ui:
+    invite-enabled: ${APP_UI_INVITE_ENABLED:true}
+    invite-code: ${APP_UI_INVITE_CODE:LEGAL-2026}
+    session-ttl-minutes: ${APP_UI_SESSION_TTL_MINUTES:60}
