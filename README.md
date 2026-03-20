@@ -1,430 +1,231 @@
+# legal-assistant (Java)
 
-# Bran AI Legal Assistant
-## Evidence‑Grounded Legal QA System (Hybrid Retrieval + LLM Verification)
+Citation-first legal assistant skeleton for large policy/regulation corpus.
 
-> Applied AI Engineering Project demonstrating **hybrid retrieval systems, LLM orchestration, and evaluation-driven AI development** for regulatory and legal domains.
+## Stack
+- Java 21+
+- Spring Boot 3.4
+- MiniMax API adapter (`LlmClient`)
+- Local ingest from markdown/html/pdf
+- In-memory retriever (MVP)
+- OpenSearch adapter placeholder (production)
 
-## Live Demo
+## Corpus path
+Configured by default to:
+`./corpus` (set via `APP_CORPUS_ROOT_PATH`)
 
-- Production URL: [https://xn--xhqt48colas13k.tech/](https://xn--xhqt48colas13k.tech/)
-- Note: This project serves Chinese government procurement/regulatory scenarios.  
-  For compatibility with government-site linking, browser parsing, and deployment tooling, the domain is shown in ASCII/Punycode form (English characters) in this README.
-- Language note: The legal corpus and most site content are based on Chinese government laws, regulations, and policy documents (primarily in Chinese).  
-  For English reading, you can use browser translation (e.g., Google Translate).
+## One-click run (recommended)
+1. Install Maven 3.9+:
+   ```bash
+   brew install maven
+   ```
+2. (Recommended for scanned PDFs) install OCR tools:
+   ```bash
+   brew install ocrmypdf tesseract
+   ```
+3. Init env file:
+   ```bash
+   cd legal-assistant
+   cp .env.example .env
+   ```
+4. Edit `.env` and set `MINIMAX_API_KEY`.
+   - 如果只想先使用 UI（登录/项目/历史/导出），可暂不配置该 key。
+   - 如需问答检索，请准备语料目录并配置：
+     - `APP_CORPUS_ROOT_PATH` (默认 `./corpus`)
+     - `APP_FAST_MODE_ROOT_PATH` (默认 `./fast-corpus`)
+   - 如需 embedding 检索（推荐）：
+     - `APP_EMBEDDING_BASE_URL`
+     - `APP_EMBEDDING_ENDPOINT`
+     - `APP_EMBEDDING_MODEL`
+5. Start service:
+   ```bash
+   ./scripts/app.sh start
+   ```
+6. Check status:
+   ```bash
+   ./scripts/app.sh status
+   ```
 
----
+## Put Your Own Legal Corpus
+Clone 后把你自己的法规文件放到以下目录（可改 `.env` 覆盖）：
 
-# Overview
+- `./corpus`：兼容模式 ingest 目录（支持 `md/html/pdf/doc/docx/xls/xlsx/txt` 等）
+- `./fast-corpus`：快速模式目录（建议使用结构化 `md`）
 
-Bran AI Legal Assistant is a **retrieval‑augmented legal intelligence system** designed for government procurement and regulatory policy analysis.
+仓库已内置空目录占位：
+- `corpus/.gitkeep`
+- `fast-corpus/.gitkeep`
 
-The system focuses on **answer reliability, traceability, and retrieval robustness**, which are critical for high‑precision domains such as:
-
-• government procurement regulations  
-• compliance analysis  
-• legal definitions and policy interpretation  
-
-Instead of relying on naive RAG pipelines, the system implements a **multi‑stage retrieval architecture** combining:
-
-- BM25 lexical search
-- dense embedding vector retrieval
-- hybrid candidate merging
-- reranking
-- evidence bundling
-- answer verification
-
-This architecture significantly improves **recall, reliability, and citation traceability**.
-
----
-
-# Key Engineering Highlights
-
-### Hybrid Retrieval Architecture
-
-The system combines **lexical retrieval and semantic retrieval**:
-
-• **BM25 keyword search** ensures legal terminology recall  
-• **Embedding vector search** captures semantic similarity  
-• **Hybrid retrieval** merges both strategies for higher recall  
-
----
-
-### Multi‑Stage Retrieval Pipeline
-
-The retrieval pipeline includes:
-
-1. Query understanding
-2. Hybrid retrieval
-3. Candidate pooling
-4. Reranking
-5. Evidence bundle construction
-6. LLM answer generation
-7. Answer verification
-
----
-
-### Evidence‑Grounded Answering
-
-Rather than generating answers directly, the system:
-
-• retrieves legal evidence  
-• structures evidence bundles  
-• generates citation‑grounded answers  
-• verifies evidence support  
-
-This reduces hallucinations and improves answer traceability.
-
----
-
-# High‑Level System Architecture
-
-```mermaid
-flowchart TD
-
-User[User Question]
-Router[Query Router]
-
-User --> Router
-
-Router --> Compat[Compat Mode Pipeline]
-Router --> Fast[Fast Mode Retrieval Pipeline]
-
-Compat --> C1[Intent Analysis]
-C1 --> C2[Basic Retrieval]
-C2 --> C3[LLM Generation]
-C3 --> C4[Fallback / Cache]
-
-Fast --> F1[Query Understanding]
-F1 --> F2[Hybrid Retrieval]
-F2 --> F3[Reranking]
-F3 --> F4[Evidence Builder]
-F4 --> F5[LLM Generation]
-F5 --> F6[Answer Verification]
-
-C4 --> Result[Final Answer + Sources]
-F6 --> Result
+推荐目录结构示例：
+```text
+legal-assistant/
+├─ corpus/
+│  ├─ 国家法规/
+│  │  ├─ 政府采购法.md
+│  │  └─ 实施条例.pdf
+│  └─ 地方法规/
+│     └─ 江苏省/
+│        └─ 采购管理办法.docx
+├─ fast-corpus/
+│  └─ 01_结构化法规md/
+│     ├─ 政府采购法_结构化.md
+│     └─ 评审专家管理_结构化.md
+└─ .env
 ```
 
----
+## Ingest And Vector Build
+默认 `SKIP_INGEST=true`，采用“首启自动入库”策略：
 
-# Retrieval Strategy
+- 若 `.run/vector-store.json` 不存在或无效：启动时自动入库
+- 若已有可用索引：启动时跳过入库（加快启动）
 
-Legal search systems must handle:
+你也可以手动控制：
 
-• exact statutory wording  
-• partially remembered legal phrases  
-• natural language descriptions of rules  
+1. 启动后手动入库（推荐）
+   ```bash
+   ./scripts/app.sh start
+   ./scripts/app.sh ingest
+   ```
+2. 启动时自动入库
+   - 在 `.env` 里设置 `SKIP_INGEST=false`（每次启动都全量入库）
+   - 然后执行 `./scripts/app.sh start`
 
-A single retrieval method cannot handle all query types reliably.
+入库会自动完成：
+- 文本抽取
+- 分块（chunk）
+- 建立检索索引并持久化到 `.run/vector-store.json`
 
-The system therefore implements **hybrid retrieval**.
+如果 embedding 服务可用（`APP_EMBEDDING_ENABLED=true` 且接口可达），问答时会自动走 embedding 融合检索；不可用时会自动回退到词法检索。
 
----
-
-# Stage 1 — BM25 Lexical Search
-
-BM25 retrieves documents using **keyword matching**.
-
-It performs well for queries containing:
-
-• statute names  
-• legal terminology  
-• article numbers  
-• policy keywords  
-
-Example:
-
-Definition of centralized procurement  
-Government procurement law article bidding requirements
-
-This ensures **exact legal phrases are not missed**.
-
----
-
-# Stage 2 — Embedding Vector Retrieval
-
-Documents are embedded into vector space.
-
-Semantic search allows the system to retrieve passages even when queries use **different wording**.
-
-Example:
-
-Who supervises procurement activities  
-How are suppliers evaluated during bidding
-
-Embedding retrieval matches **conceptual meaning rather than keywords**.
-
----
-
-# Stage 3 — Hybrid Retrieval
-
-The system merges results from:
-
-BM25 lexical search  
-Embedding semantic search
-
-Benefits:
-
-| Challenge | Solution |
-|----------|----------|
-| keyword mismatch | embedding retrieval |
-| semantic mismatch | BM25 retrieval |
-| inconsistent queries | hybrid recall |
-
-Hybrid retrieval significantly improves **recall and robustness**.
-
----
-
-# Stage 4 — Reranking
-
-Candidate passages are reranked based on:
-
-• semantic similarity  
-• legal entity detection  
-• structural anchors  
-• metadata signals  
-
-This removes noisy results and promotes the **most relevant evidence**.
-
----
-
-# Stage 5 — Evidence Bundle Construction
-
-Instead of sending raw chunks to the LLM, the system builds an **evidence bundle** containing:
-
-• top ranked passages  
-• document metadata  
-• legal anchors  
-• contextual references
-
-This improves reasoning quality and citation reliability.
-
----
-
-# Stage 6 — LLM Answer Generation
-
-The LLM receives the evidence bundle and generates answers that include:
-
-• citations  
-• referenced passages  
-• explanation of legal rules
-
----
-
-# Stage 7 — Answer Verification
-
-The answer verifier checks:
-
-• claim‑evidence alignment  
-• citation validity  
-• answer completeness  
-
-If issues are detected, the system performs **answer repair** before returning the response.
-
----
-
-# Retrieval Pipeline Diagram
-
-```mermaid
-flowchart TD
-
-A[User Question]
-B[Query Understanding]
-
-C[Hybrid Retrieval]
-
-C1[BM25 Search]
-C2[Embedding Search]
-
-D[Candidate Pool]
-E[Reranking]
-
-F[Evidence Bundle]
-
-G[LLM Generation]
-H[Answer Verification]
-
-I[Final Answer + Sources]
-
-A --> B
-B --> C
-
-C --> C1
-C --> C2
-
-C1 --> D
-C2 --> D
-
-D --> E
-E --> F
-
-F --> G
-G --> H
-H --> I
+## Ask In Quick / Compat Mode
+```bash
+curl -X POST http://localhost:8081/api/v1/chat/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"政府采购公开招标有哪些方式？","mode":"quick"}'
 ```
 
----
+- `mode=quick`：快速模式（读取 `./fast-corpus`）
+- `mode=compat`：兼容模式（基于 ingest 后索引）
+- 不传 `mode` 默认走兼容模式
 
-# Naive RAG vs This System
+## Switch API quickly
+Edit `.env` then restart:
+- `MINIMAX_API_KEY`
+- `APP_MINIMAX_BASE_URL`
+- `APP_MINIMAX_MODEL`
 
-Typical RAG pipeline:
+```bash
+./scripts/app.sh restart
+```
 
-Question → Embedding Search → LLM
+## Script commands
+```bash
+./scripts/app.sh start
+./scripts/app.sh stop
+./scripts/app.sh restart
+./scripts/app.sh status
+./scripts/app.sh logs
+./scripts/app.sh ingest
+./scripts/app.sh ask "江苏省政府采购履约验收有什么核心要求？"
+./scripts/verify_minimax.sh
+```
 
-Problems:
+## APIs
+- Health: `GET /api/v1/healthz`
+- Manual ingest: `POST /api/v1/ingest/sync`
+- Ask: `POST /api/v1/chat/ask`
+- Desktop UI: `GET /` (also supports `GET /ui` and `GET /ui/index.html`)
 
-• missed retrieval results  
-• irrelevant passages  
-• hallucinated answers  
-• poor citation traceability  
+## Open-WebUI style workspace (new)
+- Register requires username/password.
+- Login requires only username/password.
+- Password hint can be queried from login screen by username.
+- Project management: create/update/delete project.
+- History management: conversation list + global history timeline.
+- Theme toggle: dark / light.
+- Export:
+  - Conversation -> PDF / DOCX
+  - Entire project -> PDF / DOCX
 
-Bran AI Legal Assistant pipeline:
+UI API prefix: `/api/v1/ui/*`
 
-Question  
-↓  
-Query Understanding  
-↓  
-Hybrid Retrieval (BM25 + Embeddings)  
-↓  
-Reranking  
-↓  
-Evidence Bundle  
-↓  
-LLM Generation  
-↓  
-Answer Verification  
+## Deploy on Render (overseas)
+This repo includes a Render Blueprint file at repo root: `render.yaml`.
 
-This architecture improves:
+### Option A: Blueprint (recommended)
+1. Push to GitHub.
+2. In Render: `New +` -> `Blueprint`.
+3. Select this repository.
+4. Keep defaults, then set required env var:
+   - `MINIMAX_API_KEY`
+5. Deploy.
 
-• retrieval recall  
-• answer reliability  
-• evidence traceability
+### Option B: Manual Web Service
+If you don't use Blueprint:
+- Root Directory: `legal-assistant`
+- Build Command: `mvn -q -DskipTests package`
+- Start Command: `./scripts/start-render.sh`
+- Health Check Path: `/api/v1/healthz`
 
----
+### Important
+- Render disk is mounted at `/var/data` (configured in `render.yaml`).
+- Runtime data is persisted via symlink `.run -> /var/data/.run`.
+- Corpus path defaults to `/var/data/corpus`. Upload your corpus files there if needed.
+- App UI entry:
+  - `/` (recommended)
+  - `/ui`
+  - `/ui/index.html`
 
-# Benchmark Evaluation
+## Data persistence (DB)
+- User/project/conversation/history data are stored in local H2 file DB:
+  - DB file path: `.run/legal-assistant-db.mv.db`
+  - Table: `ui_store` (JSON payload)
+- Legacy `.run/ui-data.json` will be migrated automatically on first startup (renamed to `.run/ui-data.json.migrated`).
 
-The system is evaluated using a curated legal QA dataset.
+Manual ingest example:
+```bash
+curl -X POST http://localhost:8081/api/v1/ingest/sync
+```
 
-| Metric | Compat Mode | Fast Mode |
-|------|------|------|
-| Success Rate | 92% | 94% |
-| Evidence Hit Rate | 90% | 94% |
-| Avg Latency | 2.2s | 1.8s |
-| Error Rate | <2% | <2% |
+Ask example:
+```bash
+curl -X POST http://localhost:8081/api/v1/chat/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"江苏省政府采购履约验收有什么核心要求？"}'
+```
 
-Evaluation scripts automatically run **quality gate checks** before deployment.
+## Next production steps
+1. Replace `InMemoryVectorStore` with OpenSearch hybrid retrieval.
+2. Add embedding generation and reranker.
+3. Add OCR pipeline for scanned PDFs (`ocrmypdf`/`tesseract`) and merge OCR text.
+4. Add policy validity metadata: effective date, repeal status, region scope.
 
----
+## Ingest behavior (current)
+- Ingest scans `content.md` first.
+- It automatically merges text from sibling attachments and `附件/` files (`pdf/doc/docx/xls/xlsx/html/txt/md`).
+- For low-text PDFs, it first tries Tika fallback, then automatically tries `ocrmypdf` when available.
+- Excel files are extracted as table-like text (sheet + row format) to improve table retrieval quality.
+- Vector chunks are persisted to `.run/vector-store.json` to reduce cold-start loss.
 
-# Technology Stack
+## Deploy on Alibaba Cloud ECS (private GitHub repo)
+Use script: `scripts/deploy-aliyun-ecs.sh`
 
-### Backend
+1. SSH to ECS (Ubuntu, root or sudo user).
+2. Prepare environment variables:
+   - `GH_PAT`: GitHub Personal Access Token with `repo` permission.
+   - `MINIMAX_API_KEY`: MiniMax API key.
+3. Run:
+   ```bash
+   cd /tmp
+   git clone https://github.com/branbot6/legal-assistant-stable.git
+   cd legal-assistant-stable/legal-assistant
+   GH_REPO=branbot6/legal-assistant-stable \
+   GH_PAT=YOUR_GH_PAT \
+   MINIMAX_API_KEY=YOUR_MINIMAX_API_KEY \
+   APP_PORT=8080 \
+   bash scripts/deploy-aliyun-ecs.sh
+   ```
 
-Java 21  
-Spring Boot 3.4  
-Maven
-
-### Document Processing
-
-Apache Tika  
-Apache PDFBox  
-Apache POI  
-Jsoup
-
-### OCR
-
-Tesseract  
-OCRmyPDF
-
-### Retrieval
-
-BM25 lexical retrieval  
-Embedding vector retrieval  
-Hybrid retrieval pipeline  
-Reranking module
-
-### LLM Integration
-
-Unified LLM client abstraction  
-MiniMax API
-
-### Deployment
-
-Docker  
-Cloud deployment scripts  
-Health monitoring
-
----
-
-# Example Repository Structure
-
-src/
-
-controller/  
-QueryController.java  
-
-service/
-
-QueryService.java  
-CompatModeQueryService.java  
-QueryIntentAnalyzer.java  
-
-fast/v2/
-
-HybridRetriever.java  
-RerankService.java  
-AnswerVerifier.java  
-
-util/
-
-TextExtractor.java
-
-resources/
-
-application.yml
-
----
-
-# API Example
-
-Health check
-
-curl http://localhost:8080/api/v1/healthz
-
-Ask question
-
-curl -X POST http://localhost:8080/api/v1/chat/ask
-
----
-
-# AI Engineering Skills Demonstrated
-
-This project demonstrates practical **Applied AI Engineering capabilities**:
-
-• Hybrid search design  
-• Retrieval system engineering  
-• RAG architecture design  
-• LLM orchestration  
-• Evidence‑grounded reasoning  
-• Benchmark evaluation pipelines  
-• Production‑ready backend architecture  
-
----
-
-# Target Roles
-
-This project aligns with roles such as:
-
-Applied AI Engineer  
-AI Engineer  
-LLM Engineer  
-Retrieval Engineer  
-AI Backend Engineer  
-Machine Learning Engineer (Applied)
-
----
-
-# Resume Description
-
-Built an evidence‑grounded legal QA system for regulatory and procurement analysis using hybrid retrieval (BM25 + embedding search), reranking, OCR document ingestion, and answer verification, improving reliability and citation traceability for legal AI systems.
+After deployment:
+- Health check: `http://<ECS_PUBLIC_IP>:8080/api/v1/healthz`
+- UI: `http://<ECS_PUBLIC_IP>:8080/`
