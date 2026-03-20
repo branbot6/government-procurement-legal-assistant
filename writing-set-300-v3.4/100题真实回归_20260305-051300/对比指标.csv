@@ -1,0 +1,3 @@
+version,total,ok,miss,err,fallback,anchor_hit,avg_top_score
+old,100,73,27,0,0,100,0.4072
+new,100,99,1,0,1,100,0.4506

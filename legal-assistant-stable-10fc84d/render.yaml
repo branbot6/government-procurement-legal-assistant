@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: legal-assistant
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./legal-assistant/Dockerfile
+    dockerContext: ./legal-assistant
+    healthCheckPath: /api/v1/healthz
+    envVars:
+      - key: APP_UI_INVITE_ENABLED
+        value: "false"
+      - key: APP_CORPUS_ROOT_PATH
+        value: /var/data/corpus
+      - key: MINIMAX_API_KEY
+        sync: false
+      - key: APP_MINIMAX_BASE_URL
+        value: https://api.minimax.io/v1
+      - key: APP_MINIMAX_MODEL
+        value: MiniMax-M2.5
+      - key: APP_MINIMAX_GROUP_ID
+        value: ""
+    disk:
+      name: legal-assistant-data
+      mountPath: /var/data
+      sizeGB: 5

@@ -1,0 +1,12 @@
+metric,value
+total,200
+ok,199
+miss,1
+err,0
+fallback,3
+empty_evidence,0
+anchor_hit,178
+avg_top_score,0.3477
+concrete,42
+abstract,57
+hybrid,51
