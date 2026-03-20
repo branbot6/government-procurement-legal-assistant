@@ -46,6 +46,70 @@ Configured by default to:
    ./scripts/app.sh status
    ```
 
+## Embedding API (Ollama / BGE)
+推荐使用 Ollama 本地 embedding API，兼容本项目默认的 OpenAI 风格接口（`/v1/embeddings`）。
+
+1. 启动 Ollama 服务：
+   ```bash
+   brew services start ollama
+   ```
+2. 拉取可用的 BGE 中文模型（GGUF 版）：
+   ```bash
+   OLLAMA_HOST=http://127.0.0.1:11434 ollama pull hf.co/CompendiumLabs/bge-large-zh-v1.5-gguf
+   ```
+3. 在 `.env` 中配置：
+   ```bash
+   APP_EMBEDDING_ENABLED=true
+   APP_EMBEDDING_BASE_URL=http://127.0.0.1:11434
+   APP_EMBEDDING_ENDPOINT=/v1/embeddings
+   APP_EMBEDDING_MODEL=hf.co/CompendiumLabs/bge-large-zh-v1.5-gguf
+   APP_EMBEDDING_TIMEOUT_SECONDS=25
+   APP_EMBEDDING_BATCH_SIZE=32
+   ```
+4. 验证 embedding 接口：
+   ```bash
+   curl -sS http://127.0.0.1:11434/v1/embeddings \
+     -H 'Content-Type: application/json' \
+     -d '{"model":"hf.co/CompendiumLabs/bge-large-zh-v1.5-gguf","input":["政府采购公开招标适用情形"]}'
+   ```
+
+说明：
+- `BAAI/bge-large-zh-v1.5` 原仓库不能直接被 Ollama 拉取（非 GGUF）。
+- 若不走 Ollama，也可自建本地 `/v1/embeddings` 服务后填入 `APP_EMBEDDING_BASE_URL`。
+
+## Local Ingest + Online Query (Important)
+如果你希望“本地入库用 Ollama，线上用户提问走第三方 embedding API”，请注意：
+
+1. 向量空间必须一致：
+   - 入库向量与提问向量必须来自同一 embedding 模型（或同一向量空间）。
+   - 否则语义相似度会明显失真，召回质量下降。
+2. 推荐流程：
+   - 本地用 Ollama 完成入库，生成 `.run/vector-store.json`。
+   - 将该文件部署到线上。
+   - 线上设置 `SKIP_INGEST=true`，避免重新入库覆盖。
+   - 线上提问若改用第三方 API，需确保模型与本地入库一致。
+3. 代码保护（已内置）：
+   - 若提问向量维度与库中向量维度不一致，系统会自动禁用语义分并回退到词法检索，同时打印告警日志。
+
+可使用脚本快速切换 embedding 配置：
+
+```bash
+# 切到本地 Ollama（用于本地入库）
+./scripts/embedding_profile.sh local-ollama
+
+# 切到第三方 embedding API（例如线上）
+./scripts/embedding_profile.sh thirdparty https://api.example.com text-embedding-3-large /v1/embeddings
+
+# 关闭 embedding（强制词法检索）
+./scripts/embedding_profile.sh disable
+```
+
+切换后重启服务：
+
+```bash
+./scripts/app.sh restart
+```
+
 ## Put Your Own Legal Corpus
 Clone 后把你自己的法规文件放到以下目录（可改 `.env` 覆盖）：
 
@@ -128,6 +192,7 @@ Edit `.env` then restart:
 ./scripts/app.sh ingest
 ./scripts/app.sh ask "江苏省政府采购履约验收有什么核心要求？"
 ./scripts/verify_minimax.sh
+./scripts/embedding_profile.sh local-ollama
 ```
 
 ## APIs

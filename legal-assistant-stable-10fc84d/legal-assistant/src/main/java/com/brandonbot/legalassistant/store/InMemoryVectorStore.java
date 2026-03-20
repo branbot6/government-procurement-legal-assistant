@@ -48,6 +48,7 @@ public class InMemoryVectorStore implements VectorStoreGateway {
     private final Path storeFile = resolveStoreFile();
     private final EmbeddingClient embeddingClient;
     private volatile List<IndexedChunk> indexedChunks = List.of();
+    private volatile boolean embeddingDimMismatchWarned = false;
 
     public InMemoryVectorStore(EmbeddingClient embeddingClient) {
         this.embeddingClient = embeddingClient;
@@ -121,7 +122,7 @@ public class InMemoryVectorStore implements VectorStoreGateway {
                     + (0.06d * exact)
                     + articleBoost;
             if (queryVector != null && indexed.embeddingVector() != null) {
-                double semantic = cosineNormalized(queryVector, indexed.embeddingVector());
+                double semantic = semanticScore(queryVector, indexed.embeddingVector());
                 score = score * 0.66d + semantic * 0.34d;
             }
 
@@ -606,7 +607,7 @@ public class InMemoryVectorStore implements VectorStoreGateway {
         if (query == null || doc == null || query.length == 0 || doc.length == 0) {
             return 0d;
         }
-        int n = Math.min(query.length, doc.length);
+        int n = query.length;
         double dot = 0d;
         double nq = 0d;
         double nd = 0d;
@@ -622,6 +623,23 @@ public class InMemoryVectorStore implements VectorStoreGateway {
         }
         double cos = dot / (Math.sqrt(nq) * Math.sqrt(nd));
         return (cos + 1d) * 0.5d;
+    }
+
+    private double semanticScore(float[] query, float[] doc) {
+        if (query == null || doc == null || query.length == 0 || doc.length == 0) {
+            return 0d;
+        }
+        if (query.length != doc.length) {
+            if (!embeddingDimMismatchWarned) {
+                embeddingDimMismatchWarned = true;
+                log.warn("Embedding dimension mismatch detected: queryDim={}, docDim={}. "
+                                + "Semantic score disabled; lexical retrieval fallback remains active. "
+                                + "Check APP_EMBEDDING_MODEL consistency between ingest and query.",
+                        query.length, doc.length);
+            }
+            return 0d;
+        }
+        return cosineNormalized(query, doc);
     }
 
     private String normalizeForRecall(String input) {
