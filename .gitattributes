@@ -1,0 +1,2 @@
+# Exclude archived benchmark/writing datasets from GitHub language stats
+archive/** linguist-vendored
