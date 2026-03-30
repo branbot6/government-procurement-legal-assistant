@@ -1,5 +1,5 @@
 
-# Bran AI Legal Assistant
+# BranAI Legal Assistant
 ## Evidence‑Grounded Legal QA System (Hybrid Retrieval + LLM Verification)
 
 > Applied AI Engineering Project demonstrating **hybrid retrieval systems, LLM orchestration, and evaluation-driven AI development** for regulatory and legal domains.
